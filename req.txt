@@ -1,0 +1,14 @@
+numpy>=1.26
+scipy>=1.11
+pandas>=2.1
+matplotlib>=3.8
+seaborn>=0.13
+openpyxl>=3.1
+opencv-python>=4.8
+scikit-image>=0.22
+astropy>=6.0
+tqdm>=4.66
+ipykernel>=6.26
+jupyter>=1.0
+sympy>=1.12
+networkx>=3.2

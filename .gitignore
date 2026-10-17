@@ -1,0 +1,56 @@
+# =====================================================================
+# Modelska fizika – laboratorijske vaje
+# V repozitoriju so: README-ji, navodila (PDF), gradivo in podatki,
+# req.txt, prazne predloge vaje_XX.ipynb in rešitve resitve/vaje_XX_resitev.ipynb.
+# Spodaj je vse, kar ostane samo lokalno.
+# =====================================================================
+
+# --- Python in Jupyter ---
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+*_live.ipynb
+
+# --- Urejevalniki in sistem ---
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# --- LaTeX: v repozitoriju so samo PDF-ji ---
+*.tex
+*.aux
+*.log
+*.toc
+*.out
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+
+# --- Orodja za pripravo delovnih listov in zvezkov ---
+_orodja/
+build_pdf.py
+
+# --- Arhiv starih različic in osebni dokumenti ---
+_arhiv/
+prompt_organizacija_vaj.md
+fi2-modelska_fizika.pdf
+04_vaje/QA.md
+
+# --- Izhodi simulacij in izvozi (nastanejo pri delu) ---
+04_vaje/data/*
+!04_vaje/data/.gitkeep
+04_vaje/obj/
+*.exe
+08_vaje/izvoz/
+02_vaje/Rezultati_simulacije.xlsx
+
+# --- Velike datoteke in knjižnice tretjih oseb ---
+11_vaje/navodila/solar_minute.csv
+# Slike prosojnic (42 MB); ista vsebina je v .pptx
+05_vaje/navodila/prosojnice/
+04_vaje/include/
+04_vaje/lib/
