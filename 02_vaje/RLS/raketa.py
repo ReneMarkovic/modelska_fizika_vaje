@@ -145,5 +145,5 @@ class raketa:
         return np.sqrt(2 * const.G * self.M_planet / (self.R_planeta))
     
     def izvozi_rezultate(self):
-        excel = pd.DataFrame.from_dict(self.df)
+        excel = pd.DataFrame.froam_dict(self.df)
         excel.to_excel("Rezultati_simulacije.xlsx")

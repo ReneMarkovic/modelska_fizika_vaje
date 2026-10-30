@@ -44,7 +44,6 @@ fi2-modelska_fizika.pdf
 04_vaje/data/*
 !04_vaje/data/.gitkeep
 04_vaje/obj/
-*.exe
 08_vaje/izvoz/
 02_vaje/Rezultati_simulacije.xlsx
 
