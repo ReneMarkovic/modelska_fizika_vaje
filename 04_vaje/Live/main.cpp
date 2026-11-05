@@ -33,8 +33,13 @@ double sig_AB[N];
 
 int main(){
     // Inicializacija sistema: ekvidistančna porazdelitev N delcev v kocki
-    double Ep0 = inicializacija(pos, vel, acc, sig_AB, eps_AB, L, 0.7);
-    
+    double frac = 0.7;
+
+    double Ep0 = inicializacija(pos, vel, acc, sig_AB, eps_AB, L, frac);
+
+    zapisi_stanje_mikro(pos, vel, acc, sig_AB, eps_AB, L, frac);
+    zapisi_stanje_makro(pos, vel, acc, sig_AB, eps_AB);
+
     printf("Sistem uspesno inicializiran.\n");
     printf("Stevilo delcev N = %d, L = %f\n", N, L);
     printf("Zacetna potencialna energija: Ep = %f\n", Ep0);
