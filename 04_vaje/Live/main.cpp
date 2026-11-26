@@ -45,6 +45,6 @@ int main(){
     printf("Zacetna potencialna energija: Ep = %f\n", Ep0);
 
     // Tukaj sledi integracija gibalnih enacb (npr. Velocity-Verlet algoritem)
-
+    simuliraj_dinamiko(pos, vel, acc, sig_AB, eps_AB, 1000.0, 0.01);
     return 0;
 }

@@ -46,7 +46,6 @@ double sila(int i, int j, double xyz[N][3], double eps_AB[N]){
     return 24.0 * eps * (-2.0 * pow(r, -13.0) + pow(r, -7.0));
 }
 
-
 void Euler(double A[N][3], double B[N][3], double dt){
     // An+1 = An + B*dt  //
     int i;
@@ -57,8 +56,6 @@ void Euler(double A[N][3], double B[N][3], double dt){
         A[i][2] = A[i][2] + B[i][2]*dt;
     }
 }
-
-
 
 // Preimenovano, da se prepreči konflikt s stdlib random()
 double nakljucno(){
@@ -98,6 +95,7 @@ double pospeski(double xyz[N][3], double acc[N][3],
                 acc[i][k] += f * d[k];
                 acc[j][k] -= f * d[k];
             }
+            printf("%d\t%d\t%f\t%f\t%f\t%f\t%f\n",i,j,r2,s6,s12,c6,eps);
 
             Ep += 4.0 * eps * ((s12 - s6) - (c6 * c6 - c6));
         }
@@ -226,7 +224,10 @@ double simuliraj_dinamiko(double xyz[N][3], double vel[N][3], double acc[N][3],
         
         double t = 0.0, Ep;
         int iteracija = 0;
-
+        /*
+        - V datoteko "simulacija.txt" zapisuj makro količine v odvisnosti od časa.
+        - Vsakih M korakov si izpišite lege delcev (potrebujemo za g(r))
+        */
         for(t = 0.0; t < stop; t++){
             Ep = pospeski(xyz, acc, sig_AB, eps_AB);
             Euler(vel, acc, dt);
@@ -244,7 +245,7 @@ double simuliraj_dinamiko(double xyz[N][3], double vel[N][3], double acc[N][3],
                 zapisi_stanje_makro(xyz,vel, acc,sig_AB, eps_AB);
             }
         }
-
+    return 0.0;
 }
 
 

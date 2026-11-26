@@ -12,3 +12,4 @@ ipykernel>=6.26
 jupyter>=1.0
 sympy>=1.12
 networkx>=3.2
+tqdm

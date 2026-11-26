@@ -1,0 +1,243 @@
+﻿<!doctype html>
+<html lang="sl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Relaksacija celice</title>
+<style>
+* { box-sizing: border-box }
+body { margin: 0; background: #f0f5f8; color: #172c42; font: 16px system-ui, sans-serif }
+main { max-width: 960px; margin: auto; padding: 32px 16px }
+h1 { font-size: clamp(2rem, 6vw, 3rem); margin: 0 0 16px }
+h2 { font-size: 1.15rem; margin: 0 0 8px }
+form, section { padding: 16px; border: 1px solid #d4dfe7; border-radius: 12px; background: white }
+form { display: flex; flex-wrap: wrap; gap: 12px; align-items: end }
+label { display: grid; gap: 4px }
+input, button { font: inherit; padding: 8px; border: 1px solid #7890a3; border-radius: 6px }
+input { width: 140px }
+button { cursor: pointer; background: #183850; color: white }
+button:disabled { opacity: .5; cursor: default }
+.grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,280px),1fr)); gap: 12px; margin: 12px 0 }
+canvas { display: block; width: 100%; height: auto }
+output { display: block; font-variant-numeric: tabular-nums }
+p { line-height: 1.5 }
+.mc { color: #006d63 }
+.gd { color: #9b3f18 }
+</style>
+</head>
+<body>
+<main>
+<h1>Relaksacija celice</h1>
+<form>
+<label>Število stranic <input id="sides" type="number" min="3" max="100" value="6" required></label>
+<label>Popačenje ε <input id="epsilon" type="number" min="0" max="0.49" step="any" value="0.3" required></label>
+<label>Velikost koraka η <input id="eta" type="number" min="0.000001" max="1" step="any" value="0.01" required></label>
+<button id="start">Zaženi</button>
+<button id="stop" type="button" disabled>Ustavi</button>
+<button id="reset" type="button">Ponastavi</button>
+</form>
+<p>Obe metodi začneta z isto celico, prikazano s črtkano obrobo. Monte Carlo naključno premakne po eno oglišče za največ η po vsaki osi in sprejme premik, če energija pade. Gradientni spust premakne vsa oglišča za −η∇E.</p>
+<div class="grid">
+<section><h2 class="mc">Monte Carlo</h2><canvas id="mc" width="420" height="260" aria-label="Celica pri metodi Monte Carlo"></canvas><output id="mcEnergy"></output></section>
+<section><h2 class="gd">Gradientni spust</h2><canvas id="gd" width="420" height="260" aria-label="Celica pri gradientnem spustu"></canvas><output id="gdEnergy"></output></section>
+</div>
+<section>
+<h2>Energija po korakih</h2>
+<canvas id="graph" width="840" height="230" aria-label="Primerjava energij na logaritemski lestvici"></canvas>
+<output id="status" aria-live="polite"></output>
+</section>
+<p>Energija je vsota kvadratov odstopanj ploščine, obsega in dolžin stranic od pravilnega poligona. Na grafu en korak pomeni n poskusov Monte Carlo oziroma eno posodobitev z gradientnim spustom.</p>
+</main>
+<script>
+const byId = id => document.getElementById(id);
+const form = document.querySelector('form');
+const methods = ['mc', 'gd'];
+const colors = ['#006d63', '#9b3f18'];
+const limit = 600;
+let initial, cells, histories, target, eta, frame, iteration, divergence, seed;
+
+function random() {
+  seed = (Math.imul(1664525, seed) + 1013904223) >>> 0;
+  return seed / 4294967296;
+}
+
+function energy(cell) {
+  let twiceArea = 0;
+  let perimeter = 0;
+  let edges = 0;
+  cell.forEach(([x, y], i) => {
+    const [u, v] = cell[(i + 1) % cell.length];
+    const length = Math.hypot(x - u, y - v);
+    twiceArea += x * v - y * u;
+    perimeter += length;
+    edges += (length - target.edge) ** 2;
+  });
+  const area = Math.abs(twiceArea) / 2;
+  return (area - target.area) ** 2 + (perimeter - target.perimeter) ** 2 + edges;
+}
+
+function monteCarlo(cell, current) {
+  for (let attempt = 0; attempt < cell.length; attempt++) {
+    const index = Math.floor(random() * cell.length);
+    const previous = cell[index];
+    cell[index] = previous.map(coordinate => coordinate + eta * (2 * random() - 1));
+    const proposed = energy(cell);
+    if (proposed < current) current = proposed;
+    else cell[index] = previous;
+  }
+  return current;
+}
+
+function gradientStep(cell, current) {
+  const delta = 1e-6;
+  return cell.map(point => point.map((coordinate, axis) => {
+    point[axis] = coordinate + delta;
+    const derivative = (energy(cell) - current) / delta;
+    point[axis] = coordinate;
+    return coordinate - eta * derivative;
+  }));
+}
+
+function drawCell(canvas, cell, color, extent) {
+  const ctx = canvas.getContext('2d');
+  const scale = (canvas.height / 2 - 12) / extent;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  function trace(points) {
+    ctx.beginPath();
+    points.forEach(([x, y], i) => {
+      const u = canvas.width / 2 + scale * x;
+      const v = canvas.height / 2 - scale * y;
+      if (i === 0) ctx.moveTo(u, v);
+      else ctx.lineTo(u, v);
+    });
+    ctx.closePath();
+  }
+  ctx.lineWidth = 2;
+  ctx.setLineDash([5, 5]);
+  ctx.strokeStyle = '#73869b';
+  trace(initial);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  trace(cell);
+  ctx.fillStyle = color + '26';
+  ctx.fill();
+  ctx.strokeStyle = color;
+  ctx.stroke();
+}
+
+function drawGraph() {
+  const canvas = byId('graph');
+  const ctx = canvas.getContext('2d');
+  const left = 64, top = 18;
+  const width = canvas.width - left - 20;
+  const height = canvas.height - top - 30;
+  const low = -12;
+  const high = Math.max(-4, Math.ceil(Math.log10(Math.max(...histories.flat()))));
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#34465c';
+  ctx.font = '15px system-ui';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = top + height * i / 4;
+    ctx.fillText('10^' + (high - (high - low) * i / 4), 4, y + 4);
+    ctx.strokeStyle = '#d4dfe7';
+    ctx.beginPath();
+    ctx.moveTo(left, y);
+    ctx.lineTo(left + width, y);
+    ctx.stroke();
+    ctx.fillText(String(limit * i / 4), left + width * i / 4 - 12, canvas.height - 6);
+  }
+  histories.forEach((values, method) => {
+    ctx.strokeStyle = colors[method];
+    ctx.lineWidth = 2;
+    ctx.setLineDash(method === 1 ? [6, 3] : []);
+    ctx.beginPath();
+    values.forEach((value, i) => {
+      const x = left + width * i / limit;
+      const y = top + height * (high - Math.max(low, Math.log10(value))) / (high - low);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  });
+  ctx.setLineDash([]);
+}
+
+function render() {
+  const extent = Math.max(1.5, ...cells.flat(2).map(Math.abs));
+  methods.forEach((method, index) => {
+    drawCell(byId(method), cells[index], colors[index], extent);
+    byId(method + 'Energy').textContent = index === 1 && divergence
+      ? 'Divergenca pri koraku ' + divergence
+      : 'Energija ' + histories[index].at(-1).toExponential(4);
+  });
+  drawGraph();
+}
+
+function stop(message) {
+  cancelAnimationFrame(frame);
+  byId('start').disabled = false;
+  byId('stop').disabled = true;
+  byId('status').textContent = message;
+}
+
+function reset() {
+  stop('Pripravljeno za zagon.');
+  if (!form.reportValidity()) {
+    byId('status').textContent = 'Preveri nastavitve.';
+    return false;
+  }
+  const n = byId('sides').valueAsNumber;
+  const epsilon = byId('epsilon').valueAsNumber;
+  eta = byId('eta').valueAsNumber;
+  const angleStep = 2 * Math.PI / n;
+  const edge = 2 * Math.sin(Math.PI / n);
+  target = { edge, perimeter: n * edge, area: n * Math.sin(angleStep) / 2 };
+  seed = 42;
+  iteration = 0;
+  divergence = null;
+  const angles = Array.from({ length: n }, (_, i) => angleStep * (i + epsilon * (2 * random() - 1)));
+  initial = angles.map(angle => {
+    const radius = 1 + epsilon * (2 * random() - 1);
+    return [radius * Math.cos(angle), radius * Math.sin(angle)];
+  });
+  cells = methods.map(() => initial.map(point => [...point]));
+  const current = energy(initial);
+  histories = [[current], [current]];
+  render();
+  return true;
+}
+
+function tick() {
+  histories[0].push(monteCarlo(cells[0], histories[0].at(-1)));
+  if (!divergence) {
+    const current = histories[1].at(-1);
+    const proposed = current <= 1e-10 ? cells[1] : gradientStep(cells[1], current);
+    const next = energy(proposed);
+    if (!Number.isFinite(next) || next > 1e6) divergence = iteration + 1;
+    else {
+      cells[1] = proposed;
+      histories[1].push(next);
+    }
+  }
+  iteration++;
+  render();
+  if (iteration < limit) frame = requestAnimationFrame(tick);
+  else stop('Končano po ' + iteration + ' korakih.');
+}
+
+form.addEventListener('submit', event => {
+  event.preventDefault();
+  if (!reset()) return;
+  byId('start').disabled = true;
+  byId('stop').disabled = false;
+  byId('status').textContent = 'Relaksacija poteka …';
+  frame = requestAnimationFrame(tick);
+});
+form.addEventListener('change', reset);
+byId('stop').addEventListener('click', () => stop('Ustavljeno po ' + iteration + ' korakih.'));
+byId('reset').addEventListener('click', reset);
+reset();
+</script>
+</body>
+</html>

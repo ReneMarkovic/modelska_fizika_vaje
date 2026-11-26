@@ -57,13 +57,13 @@ int main() {
     const double L = 5.0;            // Velikost škatle
     const double dt = 0.005;         // Časovni korak
     const double rc = 2.5;           // Cutoff radius
-    const double target_temp = 1.0;  // Želena temperatura
+    const double target_temp = 0.1;  // Želena temperatura
 
     SimulationParams params(L, dt, rc);
     params.temp = target_temp;
     
     // Število delcev in tipov
-    params.N_delcev = 2048*2; 
+    params.N_delcev = 128*2; 
     params.N_tipov  = 2;   // tipa 0 in 1
 
     // Lennard-Jones parametri
